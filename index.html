@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Trival Group - Control de Producción</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #FFFFFF; -webkit-tap-highlight-color: transparent; }
@@ -270,76 +270,57 @@
             switchScreen('login');
         }
 
-        // --- SCANNER (jsQR + getUserMedia nativo) ---
+        // --- SCANNER (ZXing) ---
+        let zxingReader = null;
         let scanStream = null;
-        let scanLoop = null;
 
         function startScanner() {
             stopScanner();
-            setTimeout(initScanner, 300);
+            setTimeout(initScanner, 400);
         }
 
         function initScanner() {
             const video = document.getElementById('qr-video');
-            const constraints = {
-                video: {
-                    facingMode: { ideal: "environment" },
-                    width: { ideal: 1280, max: 1920 },
-                    height: { ideal: 720, max: 1080 },
-                    zoom: 1.0
-                }
-            };
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(stream => {
-                    scanStream = stream;
-                    video.srcObject = stream;
-                    video.play();
-                    document.getElementById('scanner-placeholder').classList.add('hidden');
-                    video.addEventListener('loadeddata', () => {
-                        setTimeout(() => {
-                            document.getElementById('scan-status').innerText = 'Apunta al código QR';
-                            scanLoop = setTimeout(scanFrame, 500);
-                        }, 600);
-                    });
-                })
-                .catch(err => {
-                    console.error("Camera error:", err);
-                    showStatus("No se pudo activar la cámara. Verifica los permisos en Chrome.", "bg-red-500 text-white");
-                });
-        }
+            document.getElementById('scan-status').innerText = 'Iniciando cámara...';
+            document.getElementById('scanner-placeholder').classList.add('hidden');
 
-        function scanFrame() {
-            const video = document.getElementById('qr-video');
-            const canvas = document.getElementById('qr-canvas');
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                const w = video.videoWidth;
-                const h = video.videoHeight;
-                if (w === 0 || h === 0) { scanLoop = setTimeout(scanFrame, 150); return; }
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, w, h);
-                try {
-                    const imageData = ctx.getImageData(0, 0, w, h);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "attemptBoth"
-                    });
-                    if (code && code.data) {
-                        onScanSuccess(code.data);
-                        return;
+            try {
+                zxingReader = new ZXing.BrowserMultiFormatReader();
+                zxingReader.decodeFromConstraints(
+                    { video: { facingMode: { ideal: "environment" } } },
+                    'qr-video',
+                    (result, err) => {
+                        if (result) {
+                            document.getElementById('scan-status').innerText = '✓ Leído';
+                            onScanSuccess(result.getText());
+                        }
+                        if (err && !(err instanceof ZXing.NotFoundException)) {
+                            console.warn("ZXing error:", err);
+                        }
                     }
-                } catch(e) {
-                    console.error("jsQR error:", e);
-                }
+                ).then(controls => {
+                    scanStream = controls;
+                    document.getElementById('scan-status').innerText = 'Apunta al código QR';
+                }).catch(err => {
+                    console.error("ZXing start error:", err);
+                    showStatus("No se pudo activar la cámara. Verifica los permisos.", "bg-red-500 text-white");
+                });
+            } catch(e) {
+                console.error("ZXing init error:", e);
+                showStatus("Error al iniciar el escáner.", "bg-red-500 text-white");
             }
-            scanLoop = setTimeout(scanFrame, 200);
         }
 
         function stopScanner() {
-            if (scanLoop) { clearTimeout(scanLoop); scanLoop = null; }
-            if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-            const video = document.getElementById('qr-video');
-            if (video) video.srcObject = null;
+            try {
+                if (zxingReader) { zxingReader.reset(); zxingReader = null; }
+                if (scanStream && scanStream.stop) { scanStream.stop(); scanStream = null; }
+                const video = document.getElementById('qr-video');
+                if (video && video.srcObject) {
+                    video.srcObject.getTracks().forEach(t => t.stop());
+                    video.srcObject = null;
+                }
+            } catch(e) { console.warn("stopScanner error:", e); }
         }
         function onScanSuccess(text) {
             if (!text || text.trim() === '') return;
