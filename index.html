@@ -321,15 +321,28 @@
             if (video) video.srcObject = null;
         }
         function onScanSuccess(text) {
+            if (!text || text.trim() === '') return;
             if (navigator.vibrate) navigator.vibrate(150);
-            const parts = text.split('|');
-            if (parts.length < 3) { showStatus("QR no válido. Usa una etiqueta de Trival.", "bg-red-500 text-white"); return; }
-            stopScanner().then(() => {
-                document.getElementById('qr-doc').value = parts[0] || "-";
-                document.getElementById('qr-ref').value = parts[1] || "-";
-                document.getElementById('qr-product').value = parts[2] || "-";
+
+            // Detener escaneo inmediatamente
+            if (scanLoop) { clearTimeout(scanLoop); scanLoop = null; }
+            stopScanner();
+
+            const trimmed = text.trim();
+            const parts = trimmed.split('|');
+
+            if (parts.length < 3) {
+                // Mostrar lo que leyó para diagnóstico
+                showStatus("QR leído: " + trimmed.substring(0, 40) + " — Formato no válido", "bg-red-500 text-white");
                 document.getElementById('scanner-placeholder').classList.remove('hidden');
-            });
+                return;
+            }
+
+            document.getElementById('qr-doc').value = parts[0].trim() || "-";
+            document.getElementById('qr-ref').value = parts[1].trim() || "-";
+            document.getElementById('qr-product').value = parts[2].trim() || "-";
+            document.getElementById('scanner-placeholder').classList.remove('hidden');
+            showStatus("✓ QR leído correctamente", "bg-green-500 text-white");
         }
         function restartScanner() {
             ['qr-doc','qr-ref','qr-product'].forEach(id => document.getElementById(id).value = "");
