@@ -322,31 +322,33 @@
                 }
             } catch(e) { console.warn("stopScanner error:", e); }
         }
+        let scanDone = false;
         function onScanSuccess(text) {
-            if (!text || text.trim() === '') return;
+            if (!text || text.trim() === '' || scanDone) return;
+            scanDone = true;
             if (navigator.vibrate) navigator.vibrate(150);
 
-            // Detener escaneo inmediatamente
-            if (scanLoop) { clearTimeout(scanLoop); scanLoop = null; }
             stopScanner();
 
             const trimmed = text.trim();
             const parts = trimmed.split('|');
 
-            if (parts.length < 3) {
-                // Mostrar lo que leyó para diagnóstico
-                showStatus("QR leído: " + trimmed.substring(0, 40) + " — Formato no válido", "bg-red-500 text-white");
+            setTimeout(() => {
+                if (parts.length < 3) {
+                    showStatus("QR leído: " + trimmed.substring(0, 40) + " — Formato no válido", "bg-red-500 text-white");
+                    document.getElementById('scanner-placeholder').classList.remove('hidden');
+                    scanDone = false;
+                    return;
+                }
+                document.getElementById('qr-doc').value = parts[0].trim() || "-";
+                document.getElementById('qr-ref').value = parts[1].trim() || "-";
+                document.getElementById('qr-product').value = parts[2].trim() || "-";
                 document.getElementById('scanner-placeholder').classList.remove('hidden');
-                return;
-            }
-
-            document.getElementById('qr-doc').value = parts[0].trim() || "-";
-            document.getElementById('qr-ref').value = parts[1].trim() || "-";
-            document.getElementById('qr-product').value = parts[2].trim() || "-";
-            document.getElementById('scanner-placeholder').classList.remove('hidden');
-            showStatus("✓ QR leído correctamente", "bg-green-500 text-white");
+                showStatus("✓ QR leído correctamente", "bg-green-500 text-white");
+            }, 300);
         }
         function restartScanner() {
+            scanDone = false;
             ['qr-doc','qr-ref','qr-product'].forEach(id => document.getElementById(id).value = "");
             document.getElementById('status-message').classList.add('hidden');
             startScanner();
