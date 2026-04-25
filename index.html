@@ -200,27 +200,31 @@
         // scanner managed via scanStream
         const SCREENS = ['login', 'scanner', 'admin-login', 'admin-panel'];
 
-        // --- MOCK GAS (preview) ---
-        if (typeof google === 'undefined') {
-            window.google = { script: { run: {
-                withSuccessHandler(h) { this._sh = h; return this; },
-                withFailureHandler(h) { this._fh = h; return this; },
-                getConfig() { setTimeout(() => this._sh({ inspectors: ["Juan Pablo Mosquera","Nilson Cueto"], operators: ["Sebastian Gaviria","Simon Zapata","Alejandro Arroyave","David","Samuel"] }), 400); },
-                saveRecord(d) { setTimeout(() => this._sh({ success: true }), 800); },
-                addInspector(n) { setTimeout(() => { appConfig.inspectors.push(n); this._sh(appConfig); }, 400); },
-                removeInspector(n) { setTimeout(() => { appConfig.inspectors = appConfig.inspectors.filter(i=>i!==n); this._sh(appConfig); }, 400); },
-                addOperator(n) { setTimeout(() => { appConfig.operators.push(n); this._sh(appConfig); }, 400); },
-                removeOperator(n) { setTimeout(() => { appConfig.operators = appConfig.operators.filter(o=>o!==n); this._sh(appConfig); }, 400); }
-            }}};
+        // --- GAS API ---
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzYPB7AfjarKgeS9LozMcGsRaw30NTQB0fBceoR8-Fv9jP0Cu8FniivKJh3s_kRk3DB/exec";
+
+        async function gasCall(action, payload={}) {
+            const params = new URLSearchParams({ action, ...payload });
+            const res = await fetch(GAS_URL + "?" + params.toString());
+            return res.json();
+        }
+
+        async function gasPost(action, payload={}) {
+            const res = await fetch(GAS_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ action, data: JSON.stringify(payload) })
+            });
+            return res.json();
         }
 
         // --- INIT ---
         window.onload = () => { fetchInitialConfig(); updateDateTime(); setInterval(updateDateTime, 1000); };
 
         function fetchInitialConfig() {
-            google.script.run.withSuccessHandler(cfg => {
+            gasCall('getConfig').then(cfg => {
                 appConfig = cfg; populateDropdowns(); populateAdminLists();
-            }).getConfig();
+            }).catch(err => console.error("Config error:", err));
         }
 
         function populateDropdowns() {
@@ -346,8 +350,7 @@
             document.getElementById('operator-select').classList.remove('border-red-500');
             const btn = document.getElementById('save-btn');
             btn.disabled = true; btn.innerText = "Guardando...";
-            google.script.run
-                .withSuccessHandler(res => {
+            gasPost('saveRecord', data).then(res => {
                     btn.disabled = false; btn.innerText = "Guardar Registro";
                     if (res.success) {
                         recordsToday++;
@@ -357,9 +360,7 @@
                         document.getElementById('char-count').innerText = "0/200";
                         setTimeout(restartScanner, 2000);
                     } else { showStatus("Error al guardar. Verifica tu conexión.", "bg-red-500 text-white"); }
-                })
-                .withFailureHandler(() => { btn.disabled = false; btn.innerText = "Guardar Registro"; showStatus("Error al guardar. Verifica tu conexión.", "bg-red-500 text-white"); })
-                .saveRecord(data);
+                }).catch(() => { btn.disabled = false; btn.innerText = "Guardar Registro"; showStatus("Error al guardar. Verifica tu conexión.", "bg-red-500 text-white"); });
         }
 
         function showStatus(msg, classes) {
@@ -384,19 +385,19 @@
         }
         function addInspector() {
             const inp = document.getElementById('new-inspector'); const name = inp.value.trim(); if (!name) return;
-            google.script.run.withSuccessHandler(cfg => { appConfig=cfg; inp.value=''; populateAdminLists(); populateDropdowns(); }).addInspector(name);
+            gasCall('addInspector', {name}).then(cfg => { appConfig=cfg; inp.value=''; populateAdminLists(); populateDropdowns(); });
         }
         function removeInspector(name) {
             if (!confirm(`¿Eliminar a ${name}?`)) return;
-            google.script.run.withSuccessHandler(cfg => { appConfig=cfg; populateAdminLists(); populateDropdowns(); }).removeInspector(name);
+            gasCall('removeInspector', {name}).then(cfg => { appConfig=cfg; populateAdminLists(); populateDropdowns(); });
         }
         function addOperator() {
             const inp = document.getElementById('new-operator'); const name = inp.value.trim(); if (!name) return;
-            google.script.run.withSuccessHandler(cfg => { appConfig=cfg; inp.value=''; populateAdminLists(); populateDropdowns(); }).addOperator(name);
+            gasCall('addOperator', {name}).then(cfg => { appConfig=cfg; inp.value=''; populateAdminLists(); populateDropdowns(); });
         }
         function removeOperator(name) {
             if (!confirm(`¿Eliminar a ${name}?`)) return;
-            google.script.run.withSuccessHandler(cfg => { appConfig=cfg; populateAdminLists(); populateDropdowns(); }).removeOperator(name);
+            gasCall('removeOperator', {name}).then(cfg => { appConfig=cfg; populateAdminLists(); populateDropdowns(); });
         }
 
         // --- UTILS ---
