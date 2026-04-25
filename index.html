@@ -289,7 +289,9 @@
                     video.srcObject = stream;
                     video.play();
                     document.getElementById('scanner-placeholder').classList.add('hidden');
-                    scanLoop = requestAnimationFrame(scanFrame);
+                    video.onloadedmetadata = () => {
+                        setTimeout(() => { scanLoop = setTimeout(scanFrame, 300); }, 500);
+                    };
                 })
                 .catch(err => {
                     console.error("Camera error:", err);
@@ -309,11 +311,11 @@
                 const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
                 if (code) { onScanSuccess(code.data); return; }
             }
-            scanLoop = requestAnimationFrame(scanFrame);
+            scanLoop = setTimeout(scanFrame, 150);
         }
 
         function stopScanner() {
-            if (scanLoop) { cancelAnimationFrame(scanLoop); scanLoop = null; }
+            if (scanLoop) { clearTimeout(scanLoop); scanLoop = null; }
             if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
             const video = document.getElementById('qr-video');
             if (video) video.srcObject = null;
