@@ -378,8 +378,10 @@
           <div id="info-despacho-qr"></div>
         </div>
         <label class="form-label">📋 Paso 2 — Escanear código de barras de la Guía</label>
+        <div id="wrap-despacho-barcode" style="display:none">
         <video id="video-despacho-barcode" autoplay playsinline></video>
         <div class="scan-hint">Apunta la cámara al código de barras de la guía de despacho</div>
+        </div>
         <div id="result-despacho-barcode" style="display:none">
           <div class="result-card">
             <h3>✅ Guía Detectada</h3>
@@ -692,6 +694,7 @@ function restartScanner(modulo) {
     lastQrDesp = {}; lastGuiaDesp = '';
     document.getElementById('result-despacho-qr').style.display = 'none';
     document.getElementById('result-despacho-barcode').style.display = 'none';
+    document.getElementById('wrap-despacho-barcode').style.display = 'none';
     if (codeReaderDespQr) { try { codeReaderDespQr.reset(); } catch(e){} codeReaderDespQr = null; }
     if (codeReaderDespBar) { try { codeReaderDespBar.reset(); } catch(e){} codeReaderDespBar = null; }
     initZxing('despacho-qr');
@@ -730,9 +733,10 @@ function processQR(text, modulo) {
        <div class="info-row"><span class="info-label">Referencia</span><span class="info-val">${data.referencia}</span></div>
        <div class="info-row"><span class="info-label">Producto</span><span class="info-val">${data.producto}</span></div>`;
     document.getElementById('result-despacho-qr').style.display = 'block';
-    // Stop QR scanner, start barcode scanner
+    // Stop QR scanner, show barcode video, start barcode scanner
     try { if (codeReaderDespQr) { codeReaderDespQr.reset(); codeReaderDespQr = null; } } catch(e) {}
-    setTimeout(() => initZxing('despacho-barcode'), 400);
+    document.getElementById('wrap-despacho-barcode').style.display = 'block';
+    setTimeout(() => initZxing('despacho-barcode'), 600);
   }
 }
 
