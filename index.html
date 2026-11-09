@@ -19,13 +19,13 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: var(--claro);
+    background: #e8eff7;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: flex-start;
   }
-  .app { width: 100%; max-width: 500px; min-height: 100vh; background: var(--blanco); }
+  .app { width: 100%; max-width: 500px; min-height: 100vh; background: var(--claro); }
 
   /* ── HEADER ── */
   .header {
@@ -46,19 +46,21 @@
   .pin-title { text-align: center; color: var(--azul); font-size: 20px; font-weight: 700; margin-bottom: 8px; }
   .pin-sub { text-align: center; color: var(--gris); font-size: 13px; margin-bottom: 24px; }
   .pin-dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 28px; }
-  .pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--azul); background: transparent; transition: background .2s; }
-  .pin-dot.filled { background: var(--azul); }
+  .pin-dot { width: 16px; height: 16px; border-radius: 50%; background: #e0e7ef; border: 1.5px solid #c8d5e3; transition: background .2s; }
+  .pin-dot.filled { background: #2BAD8E; border-color: #2BAD8E; }
   .pin-pad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; max-width: 280px; margin: 0 auto; }
   .pin-btn {
-    background: var(--azul); color: var(--blanco);
-    border: none; border-radius: 10px;
+    background: #f4f7fb; color: var(--azul);
+    border: 1.5px solid #d0dce9; border-radius: 10px;
     font-size: 22px; font-weight: 700;
     padding: 18px 0; cursor: pointer;
     transition: background .15s;
   }
-  .pin-btn:active { background: var(--azul2); }
-  .pin-btn.del { background: var(--gris); font-size: 18px; }
-  .pin-btn.del:active { background: #555; }
+  .pin-btn:active { background: #e0e7ef; }
+  .pin-btn.del { background: #f4f7fb; color: var(--gris); font-size: 18px; border-color: #d0dce9; }
+  .pin-btn.del:active { background: #e0e7ef; }
+  .pin-admin-link { text-align: center; margin-top: 14px; }
+  .pin-admin-link span { font-size: 13px; color: var(--gris); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .pin-error { text-align: center; color: var(--rojo); font-size: 14px; margin-top: 12px; min-height: 20px; }
 
   /* ── LOGIN (inspector) ── */
@@ -92,24 +94,25 @@
   .modules-sub { text-align: center; color: var(--gris); font-size: 13px; margin-bottom: 28px; }
   .mod-btn {
     display: block; width: 100%;
-    padding: 22px 16px; margin-bottom: 14px;
-    border: 3px solid var(--azul); border-radius: 14px;
+    padding: 18px 14px; margin-bottom: 12px;
+    border: 1px solid #e0e7ef; border-radius: 14px;
     background: var(--blanco); color: var(--azul);
-    font-size: 20px; font-weight: 900; letter-spacing: 1.5px;
+    font-size: 15px; font-weight: 800; letter-spacing: .5px;
     text-align: center; cursor: pointer;
-    transition: background .15s, color .15s, transform .1s;
+    box-shadow: 0 1px 6px rgba(0,0,0,.08);
+    transition: box-shadow .15s, transform .1s;
     position: relative;
   }
-  .mod-btn:active { transform: scale(.97); }
-  .mod-btn.selected, .mod-btn:focus { background: var(--azul); color: var(--blanco); outline: none; }
-  .mod-btn .mod-icon { font-size: 30px; display: block; margin-bottom: 6px; }
+  .mod-btn:active { transform: scale(.97); box-shadow: none; }
+  .mod-btn.selected, .mod-btn:focus { background: var(--azul); color: var(--blanco); outline: none; border-color: var(--azul); }
+  .mod-btn .mod-icon { font-size: 28px; display: block; margin-bottom: 5px; }
   .mod-btn .mod-badge {
     position: absolute; top: 10px; right: 12px;
     background: var(--teal); color: white;
     font-size: 10px; font-weight: 700; padding: 2px 7px;
     border-radius: 20px; letter-spacing: .5px;
   }
-  .mod-btn.disabled { border-color: #ccc; color: #aaa; cursor: not-allowed; }
+  .mod-btn.disabled { border-color: #ccc; color: #aaa; cursor: not-allowed; box-shadow: none; }
   .mod-btn.disabled .mod-badge { background: #aaa; }
 
   /* ── VIDEO / SCANNER ── */
@@ -212,9 +215,12 @@
         <button class="pin-btn" onclick="pinPress('7')">7</button>
         <button class="pin-btn" onclick="pinPress('8')">8</button>
         <button class="pin-btn" onclick="pinPress('9')">9</button>
-        <button class="pin-btn del" onclick="pinPress('*')">ADMIN</button>
-        <button class="pin-btn" onclick="pinPress('0')">0</button>
         <button class="pin-btn del" onclick="pinPress('del')">⌫</button>
+        <button class="pin-btn" onclick="pinPress('0')">0</button>
+        <button class="pin-btn del" style="visibility:hidden"></button>
+      </div>
+      <div class="pin-admin-link">
+        <span onclick="pinPress('*')">Acceso Administrador</span>
       </div>
       <div class="pin-error" id="pin-error"></div>
     </div>
@@ -400,7 +406,7 @@
 <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
 <script>
 // ══ CONFIGURACIÓN ══
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzYPB7AfjarKgeS9LozMcGsRaw30NTQB0fBceoR8-Fv9jP0Cu8FniivKJh3s_kRk3DB/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzjnrcoyrAzvMYew9WOpFE66KTXOhlMyf5A0c6c-iz6s9AeM4EgV_WLoIQKUv1NB4SxfA/exec';
 const APP_PIN  = '1608';
 const ADMIN_USER = 'Carlos Zapata';
 const ADMIN_PASS = 'Trival@2026*';
