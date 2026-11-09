@@ -476,39 +476,46 @@ let lastQrProd = {}, lastQrEmp = {}, lastQrDesp = {}, lastGuiaDesp = '';
 let CONFIG = { inspectors: [], operators: [], empaqueOperators: [], transportadoras: [] };
 
 async function loadConfig() {
+  const defaults = {
+    inspectors:      ['Sin inspectores'],
+    operators:       ['Sin operarios'],
+    empaqueOperators:['Nilson Cueto','Juan Pablo Mosquera','Simon Zapata'],
+    transportadoras: ['ENVIA','MILENIUM','TCC','COORDINADORA','PROPIA','SERVIENTREGA','LYT']
+  };
   try {
     const r = await fetch(GAS_URL + '?action=getConfig');
-    CONFIG = await r.json();
-  } catch(e) {
+    const res = await r.json();
+    // El GAS nuevo devuelve: inspectores, operariosProd, operariosEmp, transportadoras
     CONFIG = {
-      inspectors: ['Sin inspectores'],
-      operators:  ['Sin operarios'],
-      empaqueOperators: ['Nilson Cueto','Juan Pablo Mosquera','Simon Zapata'],
-      transportadoras: ['ENVIA','MILENIUM','TCC','COORDINADORA','PROPIA','SERVIENTREGA','LYT']
+      inspectors:       res.inspectores      || res.inspectors       || defaults.inspectors,
+      operators:        res.operariosProd    || res.operators        || defaults.operators,
+      empaqueOperators: res.operariosEmp     || res.empaqueOperators || defaults.empaqueOperators,
+      transportadoras:  res.transportadoras  || defaults.transportadoras
     };
+  } catch(e) {
+    CONFIG = defaults;
   }
-  // Inspector select
-  const si = document.getElementById('sel-inspector');
-  si.innerHTML = '<option value="">– Selecciona inspector –</option>';
-  CONFIG.inspectors.forEach(n => { si.innerHTML += `<option>${n}</option>`; });
-  // Operario producción
-  const so = document.getElementById('sel-operator');
-  so.innerHTML = '';
-  CONFIG.operators.forEach(n => { so.innerHTML += `<option>${n}</option>`; });
-  // Operario empaque (primero por defecto)
-  const se = document.getElementById('sel-empaque-op');
-  se.innerHTML = '';
-  CONFIG.empaqueOperators.forEach(n => { se.innerHTML += `<option>${n}</option>`; });
-  if (CONFIG.empaqueOperators.length > 0) se.selectedIndex = 0;
-  // Transportadoras
-  const st = document.getElementById('sel-transportadora');
-  if (st) {
-    st.innerHTML = '<option value="">– Selecciona transportadora –</option>';
-    const transList = CONFIG.transportadoras && CONFIG.transportadoras.length
-      ? CONFIG.transportadoras
-      : ['ENVIA','MILENIUM','TCC','COORDINADORA','PROPIA','SERVIENTREGA','LYT'];
-    transList.forEach(n => { st.innerHTML += `<option>${n}</option>`; });
-  }
+  try {
+    // Inspector select
+    const si = document.getElementById('sel-inspector');
+    si.innerHTML = '<option value="">– Selecciona inspector –</option>';
+    CONFIG.inspectors.forEach(n => { si.innerHTML += `<option>${n}</option>`; });
+    // Operario producción
+    const so = document.getElementById('sel-operator');
+    so.innerHTML = '<option value="">Seleccionar operario... *</option>';
+    CONFIG.operators.forEach(n => { so.innerHTML += `<option>${n}</option>`; });
+    // Operario empaque
+    const se = document.getElementById('sel-empaque-op');
+    se.innerHTML = '';
+    CONFIG.empaqueOperators.forEach(n => { se.innerHTML += `<option>${n}</option>`; });
+    if (CONFIG.empaqueOperators.length > 0) se.selectedIndex = 0;
+    // Transportadoras
+    const st = document.getElementById('sel-transportadora');
+    if (st) {
+      st.innerHTML = '<option value="">– Selecciona transportadora –</option>';
+      CONFIG.transportadoras.forEach(n => { st.innerHTML += `<option>${n}</option>`; });
+    }
+  } catch(e2) { /* DOM no listo aún */ }
 }
 
 // ══ PIN ══
