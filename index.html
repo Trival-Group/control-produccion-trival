@@ -27,28 +27,51 @@
   }
   .app { width: 100%; max-width: 500px; min-height: 100vh; background: var(--claro); }
 
-  /* ── HEADER ── */
-  .header {
-    background: var(--azul);
-    color: var(--blanco);
-    padding: 14px 16px 10px;
+  /* ── HEADER MÓDULOS (sin logo) ── */
+  .modules-header {
+    background: var(--blanco);
+    padding: 10px 14px;
+    border-bottom: 1px solid #d0dce9;
     text-align: center;
   }
-  .header img { height: 52px; margin-bottom: 6px; }
-  .header h2 { font-size: 13px; font-weight: 400; opacity: .85; letter-spacing: .5px; }
+  .modules-header-title { font-size: 11px; font-weight: 700; color: var(--azul); letter-spacing: .5px; text-transform: uppercase; }
 
   /* ── SCREENS ── */
   .screen { display: none; }
   .screen.active { display: block; }
+  .screen#screen-modules.active { display: flex; flex-direction: column; }
 
   /* ── PIN ── */
-  .pin-wrap { padding: 32px 24px; }
-  .pin-title { text-align: center; color: var(--azul); font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-  .pin-sub { text-align: center; color: var(--gris); font-size: 13px; margin-bottom: 24px; }
-  .pin-dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 28px; }
+  .screen#screen-pin.active { display: flex; flex-direction: column; }
+  /* Encabezado PIN: solo en esta pantalla, fondo blanco con logo */
+  .pin-header {
+    background: var(--blanco);
+    padding: 16px 16px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    border-bottom: 1px solid #d0dce9;
+    flex-shrink: 0;
+  }
+  .pin-header img { height: 52px; }
+  .pin-header-title { font-size: 10px; font-weight: 700; color: var(--azul); letter-spacing: .7px; text-transform: uppercase; }
+  /* Cuerpo PIN: fondo gris claro como boceto */
+  .pin-body {
+    flex: 1; background: #f0f4f8;
+    padding: 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  /* Tarjeta blanca que contiene dots y teclado */
+  .pin-card {
+    background: var(--blanco);
+    border-radius: 12px; padding: 16px 16px 12px;
+    width: 100%; max-width: 340px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    text-align: center;
+  }
+  .pin-card-label { font-size: 13px; font-weight: 700; color: var(--azul); margin-bottom: 14px; }
+  .pin-dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 20px; }
   .pin-dot { width: 16px; height: 16px; border-radius: 50%; background: #e0e7ef; border: 1.5px solid #c8d5e3; transition: background .2s; }
   .pin-dot.filled { background: #2BAD8E; border-color: #2BAD8E; }
-  .pin-pad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; max-width: 280px; margin: 0 auto; }
+  .pin-pad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
   .pin-btn {
     background: #f4f7fb; color: var(--azul);
     border: 1.5px solid #d0dce9; border-radius: 10px;
@@ -59,9 +82,9 @@
   .pin-btn:active { background: #e0e7ef; }
   .pin-btn.del { background: #f4f7fb; color: var(--gris); font-size: 18px; border-color: #d0dce9; }
   .pin-btn.del:active { background: #e0e7ef; }
-  .pin-admin-link { text-align: center; margin-top: 14px; }
+  .pin-admin-link { text-align: center; }
   .pin-admin-link span { font-size: 13px; color: var(--gris); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-  .pin-error { text-align: center; color: var(--rojo); font-size: 14px; margin-top: 12px; min-height: 20px; }
+  .pin-error { text-align: center; color: var(--rojo); font-size: 14px; min-height: 20px; }
 
   /* ── LOGIN (inspector) ── */
   .form-wrap { padding: 24px 20px; }
@@ -89,7 +112,7 @@
   .btn-danger { background: var(--rojo); color: var(--blanco); margin-top: 10px; }
 
   /* ── MÓDULOS ── */
-  .modules-wrap { padding: 28px 20px; }
+  .modules-wrap { padding: 20px 20px; flex: 1; }
   .modules-title { text-align: center; color: var(--azul); font-size: 17px; font-weight: 700; margin-bottom: 6px; }
   .modules-sub { text-align: center; color: var(--gris); font-size: 13px; margin-bottom: 28px; }
   .mod-btn {
@@ -188,36 +211,36 @@
 <body>
 <div class="app">
 
-  <!-- HEADER -->
-  <div class="header">
-    <img id="logo-img" alt="Dreamon Noble Group SAS">
-    <h2>CONTROL DE PRODUCCIÓN Y OPERACIONES</h2>
-  </div>
-
   <!-- ══ PANTALLA: PIN ══ -->
   <div class="screen active" id="screen-pin">
-    <div class="pin-wrap">
-      <div class="pin-title">Acceso al Sistema</div>
-      <div class="pin-sub">Ingresa el PIN de 4 dígitos</div>
-      <div class="pin-dots">
-        <div class="pin-dot" id="d0"></div>
-        <div class="pin-dot" id="d1"></div>
-        <div class="pin-dot" id="d2"></div>
-        <div class="pin-dot" id="d3"></div>
-      </div>
-      <div class="pin-pad">
-        <button class="pin-btn" onclick="pinPress('1')">1</button>
-        <button class="pin-btn" onclick="pinPress('2')">2</button>
-        <button class="pin-btn" onclick="pinPress('3')">3</button>
-        <button class="pin-btn" onclick="pinPress('4')">4</button>
-        <button class="pin-btn" onclick="pinPress('5')">5</button>
-        <button class="pin-btn" onclick="pinPress('6')">6</button>
-        <button class="pin-btn" onclick="pinPress('7')">7</button>
-        <button class="pin-btn" onclick="pinPress('8')">8</button>
-        <button class="pin-btn" onclick="pinPress('9')">9</button>
-        <button class="pin-btn del" onclick="pinPress('del')">⌫</button>
-        <button class="pin-btn" onclick="pinPress('0')">0</button>
-        <button class="pin-btn del" style="visibility:hidden"></button>
+    <!-- Logo solo en pantalla PIN, fondo blanco -->
+    <div class="pin-header">
+      <img id="logo-img" alt="Dreamon Noble Group SAS">
+      <div class="pin-header-title">CONTROL DE PRODUCCIÓN Y OPERACIONES</div>
+    </div>
+    <div class="pin-body">
+      <div class="pin-card">
+        <div class="pin-card-label">🔒 PIN de acceso</div>
+        <div class="pin-dots">
+          <div class="pin-dot" id="d0"></div>
+          <div class="pin-dot" id="d1"></div>
+          <div class="pin-dot" id="d2"></div>
+          <div class="pin-dot" id="d3"></div>
+        </div>
+        <div class="pin-pad">
+          <button class="pin-btn" onclick="pinPress('1')">1</button>
+          <button class="pin-btn" onclick="pinPress('2')">2</button>
+          <button class="pin-btn" onclick="pinPress('3')">3</button>
+          <button class="pin-btn" onclick="pinPress('4')">4</button>
+          <button class="pin-btn" onclick="pinPress('5')">5</button>
+          <button class="pin-btn" onclick="pinPress('6')">6</button>
+          <button class="pin-btn" onclick="pinPress('7')">7</button>
+          <button class="pin-btn" onclick="pinPress('8')">8</button>
+          <button class="pin-btn" onclick="pinPress('9')">9</button>
+          <button class="pin-btn del" onclick="pinPress('del')">⌫</button>
+          <button class="pin-btn" onclick="pinPress('0')">0</button>
+          <button class="pin-btn del" style="visibility:hidden"></button>
+        </div>
       </div>
       <div class="pin-admin-link">
         <span onclick="pinPress('*')">Acceso Administrador</span>
@@ -240,6 +263,10 @@
 
   <!-- ══ PANTALLA: MÓDULOS ══ -->
   <div class="screen" id="screen-modules">
+    <!-- Sin logo, solo texto pequeño -->
+    <div class="modules-header">
+      <div class="modules-header-title">Control de Producción y Operaciones</div>
+    </div>
     <div class="modules-wrap">
       <div class="modules-title">Selecciona el Módulo</div>
       <div class="modules-sub">¿Qué proceso vas a registrar?</div>
