@@ -138,6 +138,17 @@
   .mod-btn.disabled { border-color: #ccc; color: #aaa; cursor: not-allowed; box-shadow: none; }
   .mod-btn.disabled .mod-badge { background: #aaa; }
 
+  /* ── STEPS (Producción Paso 1/2) ── */
+  .step-header { text-align: center; margin-bottom: 20px; }
+  .step-num { font-size: 15px; font-weight: 800; color: var(--azul); }
+  .step-sub { font-size: 12px; color: var(--gris); margin-top: 2px; }
+  .step-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .fields-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .result-input { background: var(--claro) !important; font-weight: 700; color: var(--azul) !important; margin-bottom: 10px; }
+  textarea { width: 100%; padding: 10px 12px; font-size: 14px; border: 1.5px solid #ccc; border-radius: 8px; background: var(--blanco); color: #222; margin-bottom: 12px; resize: none; font-family: inherit; }
+  textarea:focus { outline: none; border-color: var(--teal); }
+  .datetime-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--gris); padding: 4px 0 8px; }
+
   /* ── VIDEO / SCANNER ── */
   .scanner-wrap { padding: 16px 20px; }
   #video-produccion, #video-empaque, #video-despacho-qr, #video-despacho-barcode {
@@ -249,17 +260,6 @@
     </div>
   </div>
 
-  <!-- ══ PANTALLA: LOGIN INSPECTOR ══ -->
-  <div class="screen" id="screen-login">
-    <div class="form-wrap">
-      <span class="back-link" onclick="goScreen('screen-pin'); resetPin()">Inicio</span>
-      <label class="form-label">Inspector de Calidad</label>
-      <select id="sel-inspector">
-        <option value="">– Selecciona inspector –</option>
-      </select>
-      <button class="btn btn-primary" onclick="goModules()">CONTINUAR</button>
-    </div>
-  </div>
 
   <!-- ══ PANTALLA: MÓDULOS ══ -->
   <div class="screen" id="screen-modules">
@@ -288,32 +288,54 @@
     </div>
   </div>
 
-  <!-- ══ PANTALLA: PRODUCCIÓN (scanner) ══ -->
+  <!-- ══ PANTALLA: PRODUCCIÓN ══ -->
   <div class="screen" id="screen-scanner">
-    <div class="scanner-wrap">
-      <span class="back-link" onclick="backToModules()">Módulos</span>
-      <div class="section-title">🏭 MÓDULO PRODUCCIÓN</div>
-      <br>
-      <label class="form-label">Operario de Producción</label>
-      <select id="sel-operator"></select>
-      <label class="form-label">Estado del proceso</label>
-      <select id="sel-status">
-        <option>En proceso</option>
-        <option>Terminado</option>
-        <option>Control de calidad</option>
-        <option>Reproceso</option>
+    <span class="back-link" style="display:block;padding:12px 20px 0" onclick="backToModules()">Módulos</span>
+    <div class="section-title">🏭 MÓDULO PRODUCCIÓN</div>
+
+    <!-- PASO 1: Inspector -->
+    <div id="prod-step1" class="scanner-wrap">
+      <div class="step-header">
+        <div class="step-num">PASO 1 DE 2</div>
+        <div class="step-sub">¿Quién va a registrar?</div>
+      </div>
+      <label class="form-label">INSPECTOR DE CALIDAD</label>
+      <select id="sel-inspector">
+        <option value="">– Selecciona inspector –</option>
       </select>
-      <label class="form-label">Escáner QR</label>
+      <button class="btn btn-secondary" style="margin-top:4px" onclick="prodContinuar()">CONTINUAR →</button>
+    </div>
+
+    <!-- PASO 2: Scanner + datos -->
+    <div id="prod-step2" class="scanner-wrap" style="display:none">
+      <div class="step-nav">
+        <span class="back-link" style="margin-bottom:0" onclick="showProdStep(1)">Volver</span>
+        <span class="step-num">PASO 2 DE 2</span>
+      </div>
       <video id="video-produccion" autoplay playsinline></video>
-      <div class="scan-hint">Apunta la cámara al código QR del producto</div>
+      <div class="scan-hint">QR o código de barras</div>
       <div id="result-produccion" style="display:none">
         <div class="result-card">
-          <h3>✅ Producto Detectado</h3>
-          <div id="info-produccion"></div>
+          <div class="fields-row-2">
+            <div>
+              <label class="form-label">DOC. ORIGEN</label>
+              <input type="text" id="prod-doc-origen" readonly class="result-input">
+            </div>
+            <div>
+              <label class="form-label">REFERENCIA</label>
+              <input type="text" id="prod-referencia" readonly class="result-input">
+            </div>
+          </div>
+          <label class="form-label">PRODUCTO</label>
+          <input type="text" id="prod-producto" readonly class="result-input">
+          <label class="form-label">OPERARIO QUE FABRICÓ *</label>
+          <select id="sel-operator"><option value="">Seleccionar operario... *</option></select>
+          <label class="form-label">OBSERVACIONES</label>
+          <textarea id="prod-obs" placeholder="Opcional..." rows="2"></textarea>
+          <div class="datetime-row" id="prod-datetime"></div>
         </div>
-        <button class="btn btn-primary" onclick="saveProduccionRecord()">📋 REGISTRAR PRODUCCIÓN</button>
+        <button class="btn btn-secondary" onclick="saveProduccionRecord()">📋 GUARDAR REGISTRO</button>
       </div>
-      <button class="btn btn-secondary" onclick="restartScanner('produccion')">🔄 Nuevo Escaneo</button>
     </div>
   </div>
 
@@ -506,7 +528,7 @@ function updateDots() {
 }
 function checkPin() {
   if (pinBuffer === APP_PIN) {
-    loadConfig().then(() => goScreen('screen-login'));
+    loadConfig().then(() => goScreen('screen-modules'));
   } else {
     document.getElementById('pin-error').textContent = 'PIN incorrecto. Intenta de nuevo.';
     setTimeout(resetPin, 800);
@@ -519,19 +541,45 @@ function goScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-function goModules() {
-  const v = document.getElementById('sel-inspector').value;
-  if (!v) { showToast('Selecciona un inspector','err'); return; }
-  currentInspector = v;
-  goScreen('screen-modules');
-}
 function goProduccion(btn) {
   document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   setTimeout(() => {
+    // Resetear resultado
+    document.getElementById('result-produccion').style.display = 'none';
+    scanDoneProd = false;
+    showProdStep(1);
     goScreen('screen-scanner');
-    initZxing('produccion');
   }, 180);
+}
+function showProdStep(n) {
+  document.getElementById('prod-step1').style.display = n === 1 ? 'block' : 'none';
+  document.getElementById('prod-step2').style.display = n === 2 ? 'block' : 'none';
+  if (n === 2) {
+    document.getElementById('result-produccion').style.display = 'none';
+    scanDoneProd = false;
+    if (codeReaderProd) { try { codeReaderProd.reset(); } catch(e){} codeReaderProd = null; }
+    updateProdDatetime();
+    initZxing('produccion');
+  } else {
+    if (codeReaderProd) { try { codeReaderProd.reset(); } catch(e){} codeReaderProd = null; }
+  }
+}
+function prodContinuar() {
+  const v = document.getElementById('sel-inspector').value;
+  if (!v) { showToast('Selecciona un inspector','err'); return; }
+  currentInspector = v;
+  showProdStep(2);
+}
+function updateProdDatetime() {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const col = new Date(utc + (-5 * 60 * 60000));
+  const pad = n => String(n).padStart(2,'0');
+  const fecha = `${pad(col.getDate())}/${pad(col.getMonth()+1)}/${col.getFullYear()}`;
+  const hora  = `${pad(col.getHours())}:${pad(col.getMinutes())}:${pad(col.getSeconds())}`;
+  const el = document.getElementById('prod-datetime');
+  if (el) el.innerHTML = `<span>${fecha}</span><span>${hora}</span>`;
 }
 function goEmpaque(btn) {
   document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('selected'));
@@ -544,6 +592,8 @@ function goEmpaque(btn) {
 function backToModules() {
   stopAllScanners();
   document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('selected'));
+  // Resetear paso de producción
+  showProdStep(1);
   goScreen('screen-modules');
 }
 function goDespacho(btn) {
@@ -621,6 +671,7 @@ function restartScanner(modulo) {
   if (modulo === 'produccion') {
     document.getElementById('result-produccion').style.display = 'none';
     scanDoneProd = false;
+    lastQrProd = {};
     if (codeReaderProd) { try { codeReaderProd.reset(); } catch(e){} codeReaderProd = null; }
     initZxing('produccion');
   } else if (modulo === 'empaque') {
@@ -648,11 +699,15 @@ function processQR(text, modulo) {
   };
   if (modulo === 'produccion') {
     lastQrProd = data;
-    document.getElementById('info-produccion').innerHTML =
-      `<div class="info-row"><span class="info-label">Doc. Origen</span><span class="info-val">${data.docOrigen}</span></div>
-       <div class="info-row"><span class="info-label">Referencia</span><span class="info-val">${data.referencia}</span></div>
-       <div class="info-row"><span class="info-label">Producto</span><span class="info-val">${data.producto}</span></div>`;
+    document.getElementById('prod-doc-origen').value = data.docOrigen;
+    document.getElementById('prod-referencia').value = data.referencia;
+    document.getElementById('prod-producto').value    = data.producto;
+    document.getElementById('sel-operator').value     = '';
+    document.getElementById('prod-obs').value         = '';
+    updateProdDatetime();
     document.getElementById('result-produccion').style.display = 'block';
+    // Parar scanner tras lectura exitosa
+    try { if (codeReaderProd) { codeReaderProd.reset(); codeReaderProd = null; } } catch(e) {}
   } else if (modulo === 'empaque') {
     lastQrEmp = data;
     document.getElementById('info-empaque').innerHTML =
@@ -676,8 +731,15 @@ function processQR(text, modulo) {
 // ══ GUARDAR PRODUCCIÓN ══
 async function saveProduccionRecord() {
   const operator = document.getElementById('sel-operator').value;
-  const status   = document.getElementById('sel-status').value;
-  const payload  = { ...lastQrProd, inspector: currentInspector, operator, status };
+  if (!operator) { showToast('Selecciona el operario que fabricó','err'); return; }
+  const observaciones = document.getElementById('prod-obs').value.trim();
+  // Fecha/hora Colombia UTC-5
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const col = new Date(utc + (-5 * 60 * 60000));
+  const pad = n => String(n).padStart(2,'0');
+  const fechaHora = `${col.getFullYear()}-${pad(col.getMonth()+1)}-${pad(col.getDate())} ${pad(col.getHours())}:${pad(col.getMinutes())}:${pad(col.getSeconds())}`;
+  const payload = { ...lastQrProd, inspector: currentInspector, operator, observaciones, fechaHora };
   try {
     showToast('Guardando…');
     const r = await fetch(GAS_URL, {
@@ -686,7 +748,7 @@ async function saveProduccionRecord() {
       body: JSON.stringify({ action: 'saveRecord', data: payload })
     });
     const res = await r.json();
-    if (res.success) { showToast('✅ Producción registrada','ok'); restartScanner('produccion'); }
+    if (res.success) { showToast('✅ Producción registrada','ok'); showProdStep(2); }
     else showToast('Error al guardar','err');
   } catch(e) { showToast('Error de conexión','err'); }
 }
