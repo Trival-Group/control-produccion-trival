@@ -379,8 +379,13 @@
         </div>
         <label class="form-label">📋 Paso 2 — Escanear código de barras de la Guía</label>
         <div id="wrap-despacho-barcode" style="display:none">
-        <video id="video-despacho-barcode" autoplay playsinline></video>
-        <div class="scan-hint">Apunta la cámara al código de barras de la guía de despacho</div>
+          <video id="video-despacho-barcode" autoplay playsinline style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;"></video>
+          <div class="scan-hint">Apunta al código de barras — mantén a 15–20 cm</div>
+          <div style="text-align:center;margin:8px 0;color:var(--gris);font-size:12px;">— o ingresa el número manualmente —</div>
+          <div style="display:flex;gap:8px">
+            <input id="input-guia-manual" type="text" placeholder="Número de guía..." style="flex:1;padding:10px;border:1.5px solid #d0dce9;border-radius:8px;font-size:15px;">
+            <button onclick="confirmarGuiaManual()" style="padding:10px 14px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;">OK</button>
+          </div>
         </div>
         <div id="result-despacho-barcode" style="display:none">
           <div class="result-card">
@@ -658,35 +663,52 @@ function initZxing(modulo) {
     });
   } else if (modulo === 'despacho-barcode') {
     scanDoneDespBar = false;
-    if (typeof Quagga === 'undefined') {
-      showToast('Error: Quagga no cargado','err'); return;
+    document.getElementById('input-guia-manual').value = '';
+    const videoEl = document.getElementById('video-despacho-barcode');
+
+    // Intentar con BarcodeDetector nativo (Chrome Android)
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','itf','upc_a','upc_e','codabar'] });
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+        .then(stream => {
+          videoEl.srcObject = stream;
+          videoEl._barcodeStream = stream;
+          videoEl.play();
+          const scan = () => {
+            if (scanDoneDespBar) return;
+            detector.detect(videoEl).then(codes => {
+              if (codes.length > 0 && !scanDoneDespBar) {
+                scanDoneDespBar = true;
+                registrarGuia(codes[0].rawValue);
+                stream.getTracks().forEach(t => t.stop());
+              } else { requestAnimationFrame(scan); }
+            }).catch(() => { if (!scanDoneDespBar) requestAnimationFrame(scan); });
+          };
+          videoEl.onloadedmetadata = () => scan();
+        }).catch(e => showToast('Sin acceso a cámara','err'));
+    } else {
+      // Fallback: solo entrada manual
+      showToast('Usa el campo manual para ingresar la guía','info');
     }
-    Quagga.init({
-      inputStream: {
-        name: 'Live',
-        type: 'LiveStream',
-        target: document.getElementById('video-despacho-barcode'),
-        constraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-      },
-      decoder: {
-        readers: ['code_128_reader','ean_reader','ean_8_reader','code_39_reader','itf_reader','upc_reader']
-      },
-      locate: true
-    }, function(err) {
-      if (err) { showToast('Error cámara: ' + err, 'err'); return; }
-      Quagga.start();
-    });
-    Quagga.onDetected(function(data) {
-      if (scanDoneDespBar) return;
-      scanDoneDespBar = true;
-      lastGuiaDesp = data.codeResult.code;
-      document.getElementById('info-despacho-barcode').innerHTML =
-        `<div class="info-row"><span class="info-label"># Guía Despacho</span><span class="info-val">${lastGuiaDesp}</span></div>`;
-      document.getElementById('result-despacho-barcode').style.display = 'block';
-      Quagga.stop();
-    });
   }
 }
+function registrarGuia(codigo) {
+  lastGuiaDesp = codigo;
+  document.getElementById('info-despacho-barcode').innerHTML =
+    `<div class="info-row"><span class="info-label"># Guía Despacho</span><span class="info-val">${codigo}</span></div>`;
+  document.getElementById('result-despacho-barcode').style.display = 'block';
+  // Detener stream de cámara si está activo
+  const v = document.getElementById('video-despacho-barcode');
+  if (v._barcodeStream) { v._barcodeStream.getTracks().forEach(t => t.stop()); v._barcodeStream = null; }
+}
+
+function confirmarGuiaManual() {
+  const val = document.getElementById('input-guia-manual').value.trim();
+  if (!val) { showToast('Ingresa el número de guía','err'); return; }
+  scanDoneDespBar = true;
+  registrarGuia(val);
+}
+
 function stopAllScanners() {
   try { if (codeReaderProd) { codeReaderProd.reset(); codeReaderProd = null; } } catch(e) {}
   try { if (codeReaderEmp) { codeReaderEmp.reset(); codeReaderEmp = null; } } catch(e) {}
@@ -713,7 +735,8 @@ function restartScanner(modulo) {
     document.getElementById('wrap-despacho-barcode').style.display = 'none';
     if (codeReaderDespQr) { try { codeReaderDespQr.reset(); } catch(e){} codeReaderDespQr = null; }
     if (codeReaderDespBar) { try { codeReaderDespBar.reset(); } catch(e){} codeReaderDespBar = null; }
-    try { Quagga.stop(); } catch(e) {}
+    const vb = document.getElementById('video-despacho-barcode');
+    if (vb && vb._barcodeStream) { vb._barcodeStream.getTracks().forEach(t => t.stop()); vb._barcodeStream = null; }
     initZxing('despacho-qr');
   }
 }
