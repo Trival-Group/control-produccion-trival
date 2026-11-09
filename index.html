@@ -82,6 +82,8 @@
   .pin-btn:active { background: #e0e7ef; }
   .pin-btn.del { background: #f4f7fb; color: var(--gris); font-size: 18px; border-color: #d0dce9; }
   .pin-btn.del:active { background: #e0e7ef; }
+  .pin-btn.pin-ok { font-size: 14px; font-weight: 800; color: var(--teal); }
+  .pin-btn.pin-ok:active { background: var(--teal); color: #fff; }
   .pin-admin-link { text-align: center; }
   .pin-admin-link span { font-size: 13px; color: var(--gris); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .pin-error { text-align: center; color: var(--rojo); font-size: 14px; min-height: 20px; }
@@ -250,7 +252,7 @@
           <button class="pin-btn" onclick="pinPress('9')">9</button>
           <button class="pin-btn del" onclick="pinPress('del')">⌫</button>
           <button class="pin-btn" onclick="pinPress('0')">0</button>
-          <button class="pin-btn" style="background:var(--teal);color:#fff;border-color:var(--teal);font-size:12px;font-weight:800" onclick="checkPin()">OK</button>
+          <button class="pin-btn pin-ok" onclick="checkPin()">OK</button>
         </div>
       </div>
       <div class="pin-admin-link">
