@@ -657,7 +657,15 @@ function initZxing(modulo) {
     });
   } else if (modulo === 'despacho-barcode') {
     scanDoneDespBar = false;
-    codeReaderDespBar = new Reader();
+    // Usar BrowserBarcodeReader para leer códigos de barras 1D (no QR)
+    const BarcodeReader = ZXing.BrowserBarcodeReader || Reader;
+    const hints = new Map();
+    if (ZXing.DecodeHintType) {
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    }
+    codeReaderDespBar = ZXing.BrowserBarcodeReader
+      ? new ZXing.BrowserBarcodeReader(hints)
+      : new Reader();
     codeReaderDespBar.decodeFromVideoDevice(null, 'video-despacho-barcode', (result, err) => {
       if (result && !scanDoneDespBar) {
         scanDoneDespBar = true;
@@ -665,7 +673,6 @@ function initZxing(modulo) {
         document.getElementById('info-despacho-barcode').innerHTML =
           `<div class="info-row"><span class="info-label"># Guía Despacho</span><span class="info-val">${lastGuiaDesp}</span></div>`;
         document.getElementById('result-despacho-barcode').style.display = 'block';
-        // Stop barcode scanner after capture
         try { if (codeReaderDespBar) { codeReaderDespBar.reset(); codeReaderDespBar = null; } } catch(e) {}
       }
     });
