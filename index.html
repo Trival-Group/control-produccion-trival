@@ -287,6 +287,13 @@
         <span class="mod-icon">🚚</span>
         DESPACHO
       </button>
+
+      <!-- MÓDULO REGISTROS (solo consulta) · agregado -->
+      <button class="mod-btn" id="btn-mod-reg" onclick="goRegistros(this)">
+        <span class="mod-icon">📋</span>
+        REGISTROS
+        <span style="display:block;font-size:11px;font-weight:600;color:#6B7B8D;letter-spacing:0;margin-top:2px">Solo consulta</span>
+      </button>
     </div>
   </div>
 
@@ -402,6 +409,41 @@
   </div>
 
   <!-- ══ PANTALLA: ADMIN LOGIN ══ -->
+  <!-- ══ PANTALLA: REGISTROS (solo consulta) · agregado ══ -->
+  <div class="screen" id="screen-registros">
+  <div class="reg-top">
+    <button class="reg-back" onclick="backToModules()">‹ Módulos</button>
+    <div class="reg-title">REGISTROS</div>
+    <button class="reg-reload" onclick="regCargar()">↻ Actualizar</button>
+  </div>
+  <div class="reg-body">
+    <div class="reg-tabs">
+      <button class="reg-tab on" data-mod="Produccion" onclick="regSetModulo(this)">Producción</button>
+      <button class="reg-tab" data-mod="Empaque" onclick="regSetModulo(this)">Empaque</button>
+      <button class="reg-tab" data-mod="Despacho" onclick="regSetModulo(this)">Despacho</button>
+    </div>
+    <input type="text" id="reg-buscar" placeholder="Buscar documento origen, SKU o producto" oninput="regRender()">
+    <div class="reg-chips">
+      <button class="reg-chip on" data-f="hoy" onclick="regSetFiltro(this)">Hoy</button>
+      <button class="reg-chip" data-f="ayer" onclick="regSetFiltro(this)">Ayer</button>
+      <button class="reg-chip" data-f="7" onclick="regSetFiltro(this)">7 días</button>
+      <button class="reg-chip" data-f="todo" onclick="regSetFiltro(this)">Todo</button>
+      <button class="reg-chip" data-f="rango" onclick="regSetFiltro(this)">Rango…</button>
+    </div>
+    <div class="reg-rango" id="reg-rango">
+      <input type="date" id="reg-desde" onchange="regRender()" aria-label="Desde">
+      <input type="date" id="reg-hasta" onchange="regRender()" aria-label="Hasta">
+    </div>
+    <div class="reg-kpis">
+      <div class="reg-kpi"><b id="reg-total">0</b><span>Registros en el periodo</span></div>
+      <div class="reg-kpi dup"><b id="reg-dups">0</b><span>Posibles duplicados</span></div>
+    </div>
+    <label class="reg-solodup"><input type="checkbox" id="reg-solodup" onchange="regRender()"> Ver solo duplicados</label>
+    <div id="reg-lista"><div class="reg-msg">Cargando…</div></div>
+  </div>
+</div>
+
+
   <div class="screen" id="screen-admin-login">
     <div class="form-wrap">
       <span class="back-link" onclick="goScreen('screen-pin'); resetPin()">Inicio</span>
@@ -923,5 +965,167 @@ function showToast(msg, type) {
   toastTimer = setTimeout(() => t.className='', 2500);
 }
 </script>
+<!-- ══════════ MÓDULO REGISTROS (solo consulta) · agregado nov-2026 · no modifica los demás módulos ══════════ -->
+<style>
+  #screen-registros { background: var(--claro); min-height: 100vh; }
+  .reg-top { background:#fff; padding:12px 16px; border-bottom:1px solid #d0dce9; display:flex; align-items:center; gap:10px; }
+  .reg-back { font-size:13px; font-weight:700; color:var(--azul); background:#e8f1f8; padding:6px 10px; border-radius:8px; cursor:pointer; border:none; }
+  .reg-title { flex:1; text-align:center; font-size:15px; font-weight:800; color:var(--azul); letter-spacing:.5px; }
+  .reg-reload { font-size:13px; font-weight:700; color:var(--teal2); background:#e8f7f4; padding:6px 10px; border-radius:8px; cursor:pointer; border:none; }
+  .reg-body { padding:14px 16px 24px; display:flex; flex-direction:column; gap:10px; }
+  .reg-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; background:#fff; padding:4px; border-radius:12px; border:1px solid #d0dce9; }
+  .reg-tab { padding:10px 0; border-radius:9px; border:none; background:transparent; color:var(--azul); font-size:13px; font-weight:700; cursor:pointer; }
+  .reg-tab.on { background:var(--azul); color:#fff; }
+  #reg-buscar { margin-bottom:0; }
+  .reg-chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .reg-chip { padding:8px 13px; border-radius:20px; border:1.5px solid #c8d5e3; background:#fff; color:var(--azul); font-size:12px; font-weight:700; cursor:pointer; }
+  .reg-chip.on { background:var(--azul); border-color:var(--azul); color:#fff; }
+  .reg-rango { display:none; grid-template-columns:1fr 1fr; gap:8px; }
+  .reg-rango.on { display:grid; }
+  .reg-rango input { margin-bottom:0; padding:9px 10px; font-size:14px; }
+  .reg-kpis { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .reg-kpi { background:#fff; border-radius:12px; padding:10px 12px; border:1px solid #d0dce9; }
+  .reg-kpi b { display:block; font-size:22px; color:var(--azul); }
+  .reg-kpi span { font-size:11px; color:var(--gris); font-weight:600; }
+  .reg-kpi.dup { background:#fdecea; border-color:#f1b5ae; }
+  .reg-kpi.dup b { color:#B3261E; }
+  .reg-kpi.dup span { color:#8C1D18; }
+  .reg-solodup { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--azul); font-weight:600; }
+  .reg-solodup input { width:auto; margin:0; appearance:auto; }
+  .reg-card { background:#fff; border-radius:12px; padding:10px 12px; border:1px solid #d0dce9; }
+  .reg-card.dup { background:#fdecea; border:1.5px solid #B3261E; }
+  .reg-row1 { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .reg-doc { font-size:14px; font-weight:800; color:var(--azul); word-break:break-all; }
+  .reg-badge { background:#B3261E; color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap; }
+  .reg-prod { font-size:12px; color:#2b3a4a; margin-top:3px; }
+  .reg-det { font-size:11px; color:var(--gris); margin-top:4px; }
+  .reg-foot { display:flex; justify-content:space-between; font-size:11px; color:var(--gris); margin-top:6px; }
+  .reg-msg { text-align:center; color:var(--gris); font-size:13px; padding:24px 0; }
+</style>
+
+<script>
+// ══ MÓDULO REGISTROS (solo consulta) ══
+// Usa GAS_URL, goScreen, backToModules y showToast que ya existen; no modifica nada de ellos.
+let regModulo = 'Produccion', regFiltro = 'hoy', regData = [];
+// Posición de cada columna en las hojas (según el Apps Script actual)
+const REG_COLS = {
+  Produccion: { fecha:5, hora:6, det: c => `Inspector: ${c[4]||'-'} · Operario: ${c[3]||'-'}` + (c[7] ? ` · Obs: ${c[7]}` : '') },
+  Empaque:    { fecha:4, hora:5, det: c => `Operario empaque: ${c[3]||'-'}` },
+  Despacho:   { fecha:5, hora:6, det: c => `Guía: ${c[3]||'-'} · Transportadora: ${c[4]||'-'}` }
+};
+
+function goRegistros(btn) {
+  document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  setTimeout(() => { goScreen('screen-registros'); regCargar(); }, 180);
+}
+
+function regFechaCol(diasAtras) {
+  const now = new Date();
+  const col = new Date(now.getTime() + now.getTimezoneOffset() * 60000 - 5 * 3600000 - (diasAtras||0) * 86400000);
+  const p = n => String(n).padStart(2, '0');
+  return `${col.getFullYear()}-${p(col.getMonth()+1)}-${p(col.getDate())}`;
+}
+
+async function regCargar() {
+  const lista = document.getElementById('reg-lista');
+  lista.innerHTML = '<div class="reg-msg">Cargando…</div>';
+  try {
+    const r = await fetch(`${GAS_URL}?action=getRecords&modulo=${regModulo}`);
+    const res = await r.json();
+    if (!res.success) { lista.innerHTML = ''; regMsg(res.error || 'No se pudo consultar'); return; }
+    regData = res.records || [];
+    const iF = REG_COLS[regModulo].fecha;
+    regData.forEach(o => { o.c[iF] = regNormFecha(o.c[iF]); });
+    regRender();
+  } catch (e) { lista.innerHTML = ''; regMsg('Error de conexión'); }
+}
+
+// Convierte la fecha del Sheet a AAAA-MM-DD (acepta "2026-11-10", "10/11/2026" o "Tue Nov 10 2026 00:00:00 GMT-0500 …")
+function regNormFecha(v) {
+  const t = String(v || '').trim();
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  const meses = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  m = t.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+(\d{4})/);
+  const p = n => String(n).padStart(2, '0');
+  if (m) return `${m[3]}-${p(meses[m[1]])}-${p(m[2])}`;
+  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return `${m[3]}-${p(m[2])}-${p(m[1])}`;
+  return t;
+}
+
+function regMsg(t) {
+  const d = document.createElement('div'); d.className = 'reg-msg'; d.textContent = t;
+  document.getElementById('reg-lista').appendChild(d);
+}
+
+function regSetModulo(btn) {
+  document.querySelectorAll('.reg-tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  regModulo = btn.dataset.mod;
+  regCargar();
+}
+
+function regSetFiltro(btn) {
+  document.querySelectorAll('.reg-chip').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  regFiltro = btn.dataset.f;
+  document.getElementById('reg-rango').classList.toggle('on', regFiltro === 'rango');
+  regRender();
+}
+
+function regRender() {
+  const cfg = REG_COLS[regModulo];
+  // Duplicados: mismo documento origen más de una vez en el módulo (todo el histórico)
+  const conteo = {};
+  regData.forEach(o => { const k = (o.c[0]||'').toUpperCase(); if (k) conteo[k] = (conteo[k]||0) + 1; });
+
+  let desde = '', hasta = '';
+  if (regFiltro === 'hoy')   { desde = hasta = regFechaCol(0); }
+  if (regFiltro === 'ayer')  { desde = hasta = regFechaCol(1); }
+  if (regFiltro === '7')     { desde = regFechaCol(6); hasta = regFechaCol(0); }
+  if (regFiltro === 'rango') { desde = document.getElementById('reg-desde').value; hasta = document.getElementById('reg-hasta').value; }
+
+  const q = document.getElementById('reg-buscar').value.trim().toUpperCase();
+  const soloDup = document.getElementById('reg-solodup').checked;
+
+  const filas = regData.filter(o => {
+    const f = o.c[cfg.fecha] || '';
+    if (desde && f < desde) return false;
+    if (hasta && f > hasta) return false;
+    if (q && !(o.c[0]+' '+o.c[1]+' '+o.c[2]).toUpperCase().includes(q)) return false;
+    if (soloDup && conteo[(o.c[0]||'').toUpperCase()] < 2) return false;
+    return true;
+  }).sort((a, b) => ((b.c[cfg.fecha]+' '+b.c[cfg.hora]) > (a.c[cfg.fecha]+' '+a.c[cfg.hora]) ? 1 : -1) || b.fila - a.fila);
+
+  const docsDup = new Set(filas.filter(o => conteo[(o.c[0]||'').toUpperCase()] > 1).map(o => (o.c[0]||'').toUpperCase()));
+  document.getElementById('reg-total').textContent = filas.length;
+  document.getElementById('reg-dups').textContent = docsDup.size;
+
+  const lista = document.getElementById('reg-lista');
+  lista.innerHTML = '';
+  if (!filas.length) { regMsg('No hay registros para este filtro'); return; }
+  filas.forEach(o => {
+    const c = o.c, n = conteo[(c[0]||'').toUpperCase()] || 0;
+    const card = document.createElement('div');
+    card.className = 'reg-card' + (n > 1 ? ' dup' : '');
+    card.style.marginBottom = '8px';
+    const r1 = document.createElement('div'); r1.className = 'reg-row1';
+    const doc = document.createElement('div'); doc.className = 'reg-doc'; doc.textContent = c[0] || '(sin documento)';
+    r1.appendChild(doc);
+    if (n > 1) { const b = document.createElement('span'); b.className = 'reg-badge'; b.textContent = 'DUPLICADO ×' + n; r1.appendChild(b); }
+    const prod = document.createElement('div'); prod.className = 'reg-prod'; prod.textContent = `${c[1]||''} · ${c[2]||''}`;
+    const det = document.createElement('div'); det.className = 'reg-det'; det.textContent = cfg.det(c);
+    const foot = document.createElement('div'); foot.className = 'reg-foot';
+    const s1 = document.createElement('span'); s1.textContent = `Fila ${o.fila} del Sheet`;
+    const s2 = document.createElement('span'); s2.textContent = `${c[cfg.fecha]||''} ${c[cfg.hora]||''}`;
+    foot.appendChild(s1); foot.appendChild(s2);
+    card.appendChild(r1); card.appendChild(prod); card.appendChild(det); card.appendChild(foot);
+    lista.appendChild(card);
+  });
+}
+</script>
+<!-- ══════════ FIN MÓDULO REGISTROS ══════════ -->
 </body>
 </html>
