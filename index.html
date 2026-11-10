@@ -423,6 +423,9 @@
       <button class="reg-tab" data-mod="Despacho" onclick="regSetModulo(this)">Despacho</button>
     </div>
     <input type="text" id="reg-buscar" placeholder="Buscar documento origen, SKU o producto" oninput="regRender()">
+    <select id="reg-operario" onchange="regRender()" aria-label="Filtrar por operario" style="margin-bottom:0">
+      <option value="">Todos los operarios</option>
+    </select>
     <div class="reg-chips">
       <button class="reg-chip on" data-f="hoy" onclick="regSetFiltro(this)">Hoy</button>
       <button class="reg-chip" data-f="ayer" onclick="regSetFiltro(this)">Ayer</button>
@@ -435,7 +438,7 @@
       <input type="date" id="reg-hasta" onchange="regRender()" aria-label="Hasta">
     </div>
     <div class="reg-kpis">
-      <div class="reg-kpi"><b id="reg-total">0</b><span>Registros en el periodo</span></div>
+      <div class="reg-kpi"><b id="reg-total">0</b><span id="reg-total-lbl">Registros en el periodo</span></div>
       <div class="reg-kpi dup"><b id="reg-dups">0</b><span>Posibles duplicados</span></div>
     </div>
     <label class="reg-solodup"><input type="checkbox" id="reg-solodup" onchange="regRender()"> Ver solo duplicados</label>
@@ -1037,6 +1040,7 @@ async function regCargar() {
     regData = res.records || [];
     const iF = REG_COLS[regModulo].fecha;
     regData.forEach(o => { o.c[iF] = regNormFecha(o.c[iF]); });
+    regLlenarOperarios();
     regRender();
   } catch (e) { lista.innerHTML = ''; regMsg('Error de conexión'); }
 }
@@ -1053,6 +1057,19 @@ function regNormFecha(v) {
   m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (m) return `${m[3]}-${p(m[2])}-${p(m[1])}`;
   return t;
+}
+
+// Filtro por operario: solo en Producción (columna "operario", posición 3)
+function regLlenarOperarios() {
+  const sel = document.getElementById('reg-operario');
+  const actual = sel.value;
+  sel.style.display = regModulo === 'Produccion' ? '' : 'none';
+  if (regModulo !== 'Produccion') { sel.value = ''; return; }
+  const nombres = [...new Set(regData.map(o => (o.c[3]||'').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b,'es'));
+  sel.innerHTML = '';
+  const t = document.createElement('option'); t.value = ''; t.textContent = 'Todos los operarios'; sel.appendChild(t);
+  nombres.forEach(n => { const op = document.createElement('option'); op.value = n; op.textContent = n; sel.appendChild(op); });
+  sel.value = nombres.includes(actual) ? actual : '';
 }
 
 function regMsg(t) {
@@ -1089,6 +1106,7 @@ function regRender() {
 
   const q = document.getElementById('reg-buscar').value.trim().toUpperCase();
   const soloDup = document.getElementById('reg-solodup').checked;
+  const operario = regModulo === 'Produccion' ? document.getElementById('reg-operario').value : '';
 
   const filas = regData.filter(o => {
     const f = o.c[cfg.fecha] || '';
@@ -1096,11 +1114,13 @@ function regRender() {
     if (hasta && f > hasta) return false;
     if (q && !(o.c[0]+' '+o.c[1]+' '+o.c[2]).toUpperCase().includes(q)) return false;
     if (soloDup && conteo[(o.c[0]||'').toUpperCase()] < 2) return false;
+    if (operario && (o.c[3]||'').trim() !== operario) return false;
     return true;
   }).sort((a, b) => ((b.c[cfg.fecha]+' '+b.c[cfg.hora]) > (a.c[cfg.fecha]+' '+a.c[cfg.hora]) ? 1 : -1) || b.fila - a.fila);
 
   const docsDup = new Set(filas.filter(o => conteo[(o.c[0]||'').toUpperCase()] > 1).map(o => (o.c[0]||'').toUpperCase()));
   document.getElementById('reg-total').textContent = filas.length;
+  document.getElementById('reg-total-lbl').textContent = operario ? `Registros de ${operario}` : 'Registros en el periodo';
   document.getElementById('reg-dups').textContent = docsDup.size;
 
   const lista = document.getElementById('reg-lista');
