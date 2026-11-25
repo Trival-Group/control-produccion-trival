@@ -173,6 +173,38 @@
 
   /* ── ADMIN ── */
   .admin-section { padding: 16px 20px; border-bottom: 1px solid #eee; }
+
+  /* ── INDICADORES ── */
+  #screen-indicadores-panel { background: var(--claro); min-height: 100vh; }
+  .ind-header { background: var(--blanco); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d0dce9; }
+  .ind-header-title { font-size: 14px; font-weight: 800; color: var(--azul); }
+  .ind-filtros { background: var(--blanco); padding: 10px 16px; border-bottom: 1px solid #eee; }
+  .ind-period-btns { display: flex; gap: 5px; }
+  .ind-period-btn { flex: 1; padding: 7px 2px; border: 1.5px solid #d0dce9; border-radius: 8px; background: var(--blanco); font-size: 11px; font-weight: 700; color: var(--azul); cursor: pointer; transition: background .15s; }
+  .ind-period-btn.selected { background: var(--azul); color: var(--blanco); border-color: var(--azul); }
+  .ind-custom-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .ind-custom-row input[type=date] { flex: 1; padding: 6px 8px; border: 1.5px solid #ccc; border-radius: 7px; font-size: 13px; background: var(--blanco); }
+  .ind-custom-row button { padding: 7px 14px; border: none; border-radius: 7px; background: var(--teal); color: var(--blanco); font-weight: 700; font-size: 12px; cursor: pointer; }
+  .ind-body { padding: 14px 14px 30px; }
+  .ind-seccion { background: var(--blanco); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+  .ind-seccion-title { color: var(--azul); font-size: 15px; font-weight: 800; margin-bottom: 12px; }
+  .ind-stats-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .ind-stat { flex: 1; background: var(--claro); border-radius: 10px; padding: 12px 8px; text-align: center; }
+  .ind-stat-num { font-size: 26px; font-weight: 800; color: var(--azul); line-height: 1; }
+  .ind-stat-lbl { font-size: 11px; color: var(--gris); margin-top: 4px; }
+  .ind-chart-title { font-size: 11px; font-weight: 700; color: var(--gris); margin: 12px 0 8px; letter-spacing: .5px; text-transform: uppercase; }
+  .ind-donut-wrap { display: flex; align-items: center; gap: 10px; }
+  .ind-donut-wrap svg { flex-shrink: 0; }
+  .ind-legend { flex: 1; overflow: hidden; }
+  .ind-legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .ind-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .ind-legend-label { flex: 1; font-size: 12px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ind-legend-val { font-size: 11px; font-weight: 700; color: var(--azul); white-space: nowrap; }
+  .ind-empty { text-align: center; color: var(--gris); font-size: 13px; padding: 14px; }
+  .ind-loading { text-align: center; padding: 40px 20px; color: var(--gris); font-size: 14px; }
+  .ind-error { text-align: center; color: var(--rojo); font-size: 13px; padding: 20px; }
+  .pin-ind-link { text-align: center; margin-top: 6px; }
+  .pin-ind-link span { font-size: 13px; color: var(--gris); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .admin-section h3 { color: var(--azul); font-size: 15px; margin-bottom: 10px; }
   .list-item {
     display: flex; justify-content: space-between; align-items: center;
@@ -257,6 +289,9 @@
       </div>
       <div class="pin-admin-link">
         <span onclick="pinPress('*')">Acceso Administrador</span>
+      </div>
+      <div class="pin-ind-link">
+        <span onclick="goScreen('screen-indicadores-login')">📊 Indicadores</span>
       </div>
       <div class="pin-error" id="pin-error"></div>
     </div>
@@ -499,6 +534,46 @@
         <input type="text" id="new-transportadora" placeholder="Nombre de la transportadora">
         <button onclick="addItem('transportadora')">Agregar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ══ PANTALLA: INDICADORES LOGIN ══ -->
+  <div class="screen" id="screen-indicadores-login">
+    <div class="form-wrap">
+      <span class="back-link" onclick="goScreen('screen-pin'); resetPin()">Inicio</span>
+      <label class="form-label">Usuario</label>
+      <input type="text" id="ind-user" placeholder="Usuario">
+      <label class="form-label">Contraseña</label>
+      <input type="password" id="ind-pass" placeholder="Contraseña">
+      <button class="btn btn-primary" onclick="indLogin()">VER INDICADORES</button>
+      <div class="pin-error" id="ind-login-error"></div>
+    </div>
+  </div>
+
+  <!-- ══ PANTALLA: INDICADORES PANEL ══ -->
+  <div class="screen" id="screen-indicadores-panel">
+    <div class="ind-header">
+      <span class="back-link" style="margin:0" onclick="goScreen('screen-pin'); resetPin()">Salir</span>
+      <span class="ind-header-title">📊 Indicadores</span>
+      <span style="width:48px"></span>
+    </div>
+    <div class="ind-filtros">
+      <div class="ind-period-btns">
+        <button class="ind-period-btn selected" data-p="hoy"   onclick="indSetPeriodo('hoy',this)">Hoy</button>
+        <button class="ind-period-btn"           data-p="7"    onclick="indSetPeriodo('7',this)">7 días</button>
+        <button class="ind-period-btn"           data-p="15"   onclick="indSetPeriodo('15',this)">15 días</button>
+        <button class="ind-period-btn"           data-p="30"   onclick="indSetPeriodo('30',this)">30 días</button>
+        <button class="ind-period-btn"           data-p="custom" onclick="indSetPeriodo('custom',this)">📅</button>
+      </div>
+      <div class="ind-custom-row" id="ind-custom-row" style="display:none">
+        <input type="date" id="ind-fecha-desde">
+        <span style="color:var(--gris)">→</span>
+        <input type="date" id="ind-fecha-hasta">
+        <button onclick="indCargar()">OK</button>
+      </div>
+    </div>
+    <div class="ind-body" id="ind-contenido">
+      <div class="ind-loading">Cargando…</div>
     </div>
   </div>
 
@@ -1147,5 +1222,372 @@ function regRender() {
 }
 </script>
 <!-- ══════════ FIN MÓDULO REGISTROS ══════════ -->
+
+<!-- ══════════ MÓDULO INDICADORES ══════════ -->
+<script>
+// ── Estado ──────────────────────────────────────────
+let indPeriodo = 'hoy';
+let indDataProd = [], indDataEmp = [], indDataDesp = [], indDataPed = [];
+let indCargado = false;
+
+const IND_COLORES = ['#2BAD8E','#1D5B8E','#e74c3c','#f39c12','#9b59b6','#27ae60','#3498db','#e67e22','#1abc9c','#c0392b'];
+
+// ── Login ────────────────────────────────────────────
+function indLogin() {
+  const u = document.getElementById('ind-user').value.trim();
+  const p = document.getElementById('ind-pass').value;
+  const errEl = document.getElementById('ind-login-error');
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    errEl.textContent = '';
+    document.getElementById('ind-user').value = '';
+    document.getElementById('ind-pass').value = '';
+    goScreen('screen-indicadores-panel');
+    if (!indCargado) indCargar();
+    else indRenderizar();
+  } else {
+    errEl.textContent = 'Credenciales incorrectas.';
+  }
+}
+
+// ── Helpers de fecha (hora Colombia UTC-5) ───────────
+function indFechaCol(diasAtras) {
+  const now = new Date();
+  const col = new Date(now.getTime() + now.getTimezoneOffset() * 60000 - 5 * 3600000 - (diasAtras||0) * 86400000);
+  const p = n => String(n).padStart(2,'0');
+  return `${col.getFullYear()}-${p(col.getMonth()+1)}-${p(col.getDate())}`;
+}
+
+// ── Período ──────────────────────────────────────────
+function indSetPeriodo(periodo, btn) {
+  document.querySelectorAll('.ind-period-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  indPeriodo = periodo;
+  const cr = document.getElementById('ind-custom-row');
+  if (periodo === 'custom') {
+    cr.style.display = 'flex';
+  } else {
+    cr.style.display = 'none';
+    if (indCargado) indRenderizar();
+  }
+}
+
+function indGetRango() {
+  const hoy = indFechaCol(0);
+  if (indPeriodo === 'hoy')    return { desde: hoy, hasta: hoy };
+  if (indPeriodo === '7')      return { desde: indFechaCol(6), hasta: hoy };
+  if (indPeriodo === '15')     return { desde: indFechaCol(14), hasta: hoy };
+  if (indPeriodo === '30')     return { desde: indFechaCol(29), hasta: hoy };
+  if (indPeriodo === 'custom') {
+    const desde = document.getElementById('ind-fecha-desde').value;
+    const hasta = document.getElementById('ind-fecha-hasta').value;
+    return (desde && hasta) ? { desde, hasta } : null;
+  }
+  return null;
+}
+
+// ── Carga de datos ───────────────────────────────────
+async function indCargar() {
+  const contenido = document.getElementById('ind-contenido');
+  contenido.innerHTML = '<div class="ind-loading">⏳ Cargando datos…</div>';
+  try {
+    const [rP, rE, rD, rPed] = await Promise.all([
+      fetch(`${GAS_URL}?action=getRecords&modulo=Produccion`).then(r => r.json()),
+      fetch(`${GAS_URL}?action=getRecords&modulo=Empaque`).then(r => r.json()),
+      fetch(`${GAS_URL}?action=getRecords&modulo=Despacho`).then(r => r.json()),
+      fetch(`${GAS_URL}?action=getPedidos`).then(r => r.json())
+    ]);
+    const norm = (arr, iF) => (arr || []).map(o => {
+      const c = [...o.c];
+      c[iF] = regNormFecha(c[iF]);   // reutiliza la función ya existente
+      return { fila: o.fila, c };
+    });
+    indDataProd = norm(rP.records, 5);
+    indDataEmp  = norm(rE.records, 4);
+    indDataDesp = norm(rD.records, 5);
+    indDataPed  = rPed.records || [];
+    indCargado  = true;
+    indRenderizar();
+  } catch (err) {
+    contenido.innerHTML = '<div class="ind-error">⚠️ Error al cargar datos. Verifica la conexión.</div>';
+  }
+}
+
+// ── Filtro por período ───────────────────────────────
+function indFiltrar(arr, iF) {
+  const rango = indGetRango();
+  if (!rango) return arr;
+  return arr.filter(o => { const f = o.c[iF] || ''; return f >= rango.desde && f <= rango.hasta; });
+}
+
+// ── Render principal ─────────────────────────────────
+function indRenderizar() {
+  const rango = indGetRango();
+  if (!rango) {
+    document.getElementById('ind-contenido').innerHTML = '<div class="ind-empty">Selecciona un rango de fechas válido</div>';
+    return;
+  }
+
+  const prod = indFiltrar(indDataProd, 5);
+  const emp  = indFiltrar(indDataEmp,  4);
+  const desp = indFiltrar(indDataDesp, 5);
+
+  // ── Producción: ranking por operario (c[3])
+  const porOp = {};
+  prod.forEach(o => { const k = (o.c[3]||'Sin asignar').trim() || 'Sin asignar'; porOp[k] = (porOp[k]||0) + 1; });
+  const sortedOp = Object.entries(porOp).sort((a,b) => b[1]-a[1]);
+
+  // ── Producción: top 5 referencias (c[1])
+  const porRef = {};
+  prod.forEach(o => { const k = (o.c[1]||'Sin ref').trim() || 'Sin ref'; porRef[k] = (porRef[k]||0) + 1; });
+  const top5 = Object.entries(porRef).sort((a,b) => b[1]-a[1]).slice(0,5);
+
+  // ── Días en período (para promedio diario)
+  const msDay = 86400000;
+  const dias  = Math.max(1, Math.round((new Date(rango.hasta) - new Date(rango.desde)) / msDay) + 1);
+  const promDiario = prod.length > 0 ? (prod.length / dias).toFixed(1) : '0';
+
+  // ── Empaque: comparativo acumulado total (no filtrado por período)
+  const totalProdAll = indDataProd.length;
+  const totalEmpAll  = indDataEmp.length;
+  const pctEmp = totalProdAll > 0 ? Math.min(100, Math.round(totalEmpAll / totalProdAll * 100)) : 0;
+  const colorPct = pctEmp >= 80 ? 'var(--verde)' : pctEmp >= 50 ? 'var(--azul)' : 'var(--rojo)';
+
+  // ── Despacho: por transportadora (c[4])
+  const porTransp = {};
+  desp.forEach(o => { const k = (o.c[4]||'Sin transportadora').trim() || 'Sin transportadora'; porTransp[k] = (porTransp[k]||0) + 1; });
+
+  // ── Despacho: envíos por día (c[5])
+  const porDia = {};
+  desp.forEach(o => { const f = o.c[5] || ''; if (f) porDia[f] = (porDia[f]||0) + 1; });
+  const diasArr = [];
+  let curD = new Date(rango.desde + 'T12:00:00Z');
+  const finD = new Date(rango.hasta + 'T12:00:00Z');
+  while (curD <= finD && diasArr.length < 60) {
+    const pp = n => String(n).padStart(2,'0');
+    diasArr.push(`${curD.getFullYear()}-${pp(curD.getMonth()+1)}-${pp(curD.getDate())}`);
+    curD = new Date(curD.getTime() + msDay);
+  }
+
+  // ── Embudo acumulado total
+  const embProd = indDataProd.length;
+  const embEmp  = indDataEmp.length;
+  const embDesp = indDataDesp.length;
+
+  // ── HTML ─────────────────────────────────────────
+  let html = '';
+
+  // Pedidos pendientes (Odoo)
+  html += indPendientesHtml();
+
+  // Embudo
+  html += `<div class="ind-seccion">
+    <div class="ind-seccion-title">🔄 Embudo general (acumulado total)</div>
+    ${indEmbudo(embProd, embEmp, embDesp)}
+  </div>`;
+
+  // Producción
+  html += `<div class="ind-seccion">
+    <div class="ind-seccion-title">🏭 Producción</div>
+    <div class="ind-stats-row">
+      <div class="ind-stat"><div class="ind-stat-num">${prod.length}</div><div class="ind-stat-lbl">Unidades</div></div>
+      <div class="ind-stat"><div class="ind-stat-num">${promDiario}</div><div class="ind-stat-lbl">Prom/día</div></div>
+      <div class="ind-stat"><div class="ind-stat-num">${sortedOp.length}</div><div class="ind-stat-lbl">Operarios</div></div>
+    </div>
+    <div class="ind-chart-title">Ranking por operario</div>
+    ${indDonut(Object.fromEntries(sortedOp), IND_COLORES)}
+    <div class="ind-chart-title">Top 5 referencias</div>
+    ${indDonut(Object.fromEntries(top5), IND_COLORES)}
+  </div>`;
+
+  // Empaque
+  html += `<div class="ind-seccion">
+    <div class="ind-seccion-title">📦 Empaque</div>
+    <div class="ind-stats-row">
+      <div class="ind-stat"><div class="ind-stat-num">${emp.length}</div><div class="ind-stat-lbl">Empacados (período)</div></div>
+      <div class="ind-stat"><div class="ind-stat-num" style="color:${colorPct}">${pctEmp}%</div><div class="ind-stat-lbl">vs producción total</div></div>
+    </div>
+    <div class="ind-chart-title">Producción vs empaque (acumulado)</div>
+    ${indDonut({'Empacado': totalEmpAll, 'Pendiente empaque': Math.max(0, totalProdAll - totalEmpAll)}, ['#2BAD8E','#d0dce9'])}
+  </div>`;
+
+  // Despacho
+  html += `<div class="ind-seccion">
+    <div class="ind-seccion-title">🚚 Despacho</div>
+    <div class="ind-stats-row">
+      <div class="ind-stat"><div class="ind-stat-num">${desp.length}</div><div class="ind-stat-lbl">Guías despachadas</div></div>
+    </div>
+    <div class="ind-chart-title">Envíos por día</div>
+    ${indBarras(diasArr, porDia)}
+    <div class="ind-chart-title">Por transportadora</div>
+    ${indDonut(porTransp, IND_COLORES)}
+  </div>`;
+
+  document.getElementById('ind-contenido').innerHTML = html;
+}
+
+// ── Pedidos pendientes (Odoo) ─────────────────────────
+function indPendientesHtml() {
+  if (!indDataPed.length) return '';
+
+  // Mapas: docOrigen → unidades producidas y despachadas (acumulado total, sin filtro de fecha)
+  const mapProd = {}, mapDesp = {};
+  indDataProd.forEach(o => { const k = (o.c[0]||'').trim(); if (k) mapProd[k] = (mapProd[k]||0) + 1; });
+  indDataDesp.forEach(o => { const k = (o.c[0]||'').trim(); if (k) mapDesp[k] = (mapDesp[k]||0) + 1; });
+
+  let totalPedido = 0, totalPendProd = 0, totalPendDesp = 0;
+  const porCanal = {};
+  const urgentes = [];
+
+  indDataPed.forEach(o => {
+    const doc   = o.c[1]; // docOrigen
+    const canal = o.c[2];
+    const fecha = o.c[3];
+    const cant  = o.c[6];
+    totalPedido += cant;
+    const prod     = mapProd[doc] || 0;
+    const desp     = mapDesp[doc] || 0;
+    const pendProd = Math.max(0, cant - prod);
+    const pendDesp = Math.max(0, prod - desp);
+    totalPendProd += pendProd;
+    totalPendDesp += pendDesp;
+    if (pendProd > 0) {
+      porCanal[canal] = (porCanal[canal]||0) + pendProd;
+      urgentes.push({ doc, canal, fecha, pendProd });
+    }
+  });
+
+  // Ordenar por fecha de orden (más antigua = más urgente)
+  urgentes.sort((a,b) => a.fecha.localeCompare(b.fecha));
+  const top5 = urgentes.slice(0, 5);
+
+  const colorPend = totalPendProd === 0 ? 'var(--verde)' : totalPendProd < 20 ? '#f39c12' : 'var(--rojo)';
+  const colorDesp = totalPendDesp === 0 ? 'var(--verde)' : '#f39c12';
+
+  let html = `<div class="ind-seccion">
+    <div class="ind-seccion-title">📋 Órdenes Odoo pendientes</div>
+    <div class="ind-stats-row">
+      <div class="ind-stat">
+        <div class="ind-stat-num">${indDataPed.length}</div>
+        <div class="ind-stat-lbl">Pedidos activos</div>
+      </div>
+      <div class="ind-stat">
+        <div class="ind-stat-num">${totalPedido}</div>
+        <div class="ind-stat-lbl">Uds pedidas</div>
+      </div>
+    </div>
+    <div class="ind-stats-row">
+      <div class="ind-stat">
+        <div class="ind-stat-num" style="color:${colorPend}">${totalPendProd}</div>
+        <div class="ind-stat-lbl">⚙️ Pend. producir</div>
+      </div>
+      <div class="ind-stat">
+        <div class="ind-stat-num" style="color:${colorDesp}">${totalPendDesp}</div>
+        <div class="ind-stat-lbl">📦 Pend. despachar</div>
+      </div>
+    </div>`;
+
+  if (Object.keys(porCanal).length > 0) {
+    html += `<div class="ind-chart-title">Pendiente por canal de venta</div>
+    ${indDonut(porCanal, IND_COLORES)}`;
+  }
+
+  if (top5.length > 0) {
+    html += `<div class="ind-chart-title">Pedidos más urgentes (sin producir)</div>
+    <div style="font-size:11px">`;
+    top5.forEach(u => {
+      html += `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f4f8;align-items:center">
+        <div>
+          <div style="font-weight:700;color:#333;font-size:11px">${u.doc}</div>
+          <div style="color:var(--gris);font-size:10px">${u.canal} · ${u.fecha}</div>
+        </div>
+        <div style="color:var(--rojo);font-weight:800;font-size:13px">${u.pendProd} ud${u.pendProd!==1?'s':''}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+// ── Gráfica donut SVG ────────────────────────────────
+function indDonut(data, colores) {
+  const entries = Object.entries(data).filter(([,v]) => v > 0);
+  if (!entries.length) return '<div class="ind-empty">Sin datos en el período</div>';
+  const total = entries.reduce((s,[,v]) => s+v, 0);
+  const r = 52, cx = 62, cy = 62, sw = 18, circ = 2 * Math.PI * r;
+  let off = 0, paths = '', legend = '';
+  entries.forEach(([lbl, val], i) => {
+    const pct = val / total;
+    const dash = pct * circ;
+    const color = colores[i % colores.length];
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-dasharray="${dash.toFixed(2)} ${(circ-dash).toFixed(2)}" stroke-dashoffset="${(-off*circ).toFixed(2)}" style="transform-origin:${cx}px ${cy}px;transform:rotate(-90deg)"/>`;
+    legend += `<div class="ind-legend-item"><span class="ind-legend-dot" style="background:${color}"></span><span class="ind-legend-label">${lbl}</span><span class="ind-legend-val">${val}&thinsp;(${Math.round(pct*100)}%)</span></div>`;
+    off += pct;
+  });
+  return `<div class="ind-donut-wrap">
+    <svg width="124" height="124" viewBox="0 0 124 124">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#e8eff7" stroke-width="${sw}"/>
+      ${paths}
+      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="17" font-weight="800" fill="var(--azul)">${total}</text>
+    </svg>
+    <div class="ind-legend">${legend}</div>
+  </div>`;
+}
+
+// ── Gráfica de barras diaria SVG ─────────────────────
+function indBarras(diasArr, porDia) {
+  if (!diasArr.length) return '<div class="ind-empty">Sin datos</div>';
+  // Si hay más de 14 días, mostrar solo los últimos 14
+  const dias = diasArr.length > 14 ? diasArr.slice(-14) : diasArr;
+  const vals = dias.map(d => porDia[d] || 0);
+  const maxV = Math.max(...vals, 1);
+  const W = 310, H = 110, padL = 8, padR = 8;
+  const usableW = W - padL - padR;
+  const barW = Math.max(8, Math.floor(usableW / dias.length) - 4);
+  const gap  = usableW / dias.length;
+  let bars = '', labels = '';
+  dias.forEach((d, i) => {
+    const v = vals[i];
+    const bh = Math.round((v / maxV) * (H - 28));
+    const x  = padL + i * gap + (gap - barW) / 2;
+    const y  = H - 22 - bh;
+    bars   += `<rect x="${x.toFixed(1)}" y="${y}" width="${barW}" height="${Math.max(bh,2)}" rx="3" fill="${v > 0 ? 'var(--teal)' : '#e8eff7'}"/>`;
+    if (v > 0) bars += `<text x="${(x+barW/2).toFixed(1)}" y="${y-3}" text-anchor="middle" font-size="9" fill="var(--azul)" font-weight="700">${v}</text>`;
+    const p = d.split('-');
+    labels += `<text x="${(x+barW/2).toFixed(1)}" y="${H-5}" text-anchor="middle" font-size="8" fill="var(--gris)">${p.length===3?`${p[2]}/${p[1]}`:d}</text>`;
+  });
+  return `<div style="overflow-x:auto"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="max-width:100%;display:block">
+    <line x1="${padL}" y1="${H-22}" x2="${W-padR}" y2="${H-22}" stroke="#e8eff7" stroke-width="1"/>
+    ${bars}${labels}
+  </svg></div>`;
+}
+
+// ── Embudo visual de barras horizontales ─────────────
+function indEmbudo(prod, emp, desp) {
+  const max = Math.max(prod, 1);
+  const pctE = prod > 0 ? Math.round(emp  / prod * 100) : 0;
+  const pctD = prod > 0 ? Math.round(desp / prod * 100) : 0;
+  const barra = (val, color, lbl, pct, icon) => {
+    const w = Math.max(8, Math.round((val / max) * 100));
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gris);margin-bottom:4px">
+        <span>${icon} ${lbl}</span>
+        <span style="font-weight:800;color:var(--azul)">${val.toLocaleString('es-CO')} uds${pct !== null ? ' · <span style="color:'+color+'">'+pct+'%</span>' : ''}</span>
+      </div>
+      <div style="background:#e8eff7;border-radius:6px;height:18px;overflow:hidden">
+        <div style="width:${w}%;height:100%;background:${color};border-radius:6px"></div>
+      </div>
+    </div>`;
+  };
+  return `<div>
+    ${barra(prod,'#1D5B8E','Producción', null,  '🏭')}
+    ${barra(emp, '#2BAD8E','Empaque',    pctE,  '📦')}
+    ${barra(desp,'#f39c12','Despacho',   pctD,  '🚚')}
+    <div style="font-size:11px;color:var(--gris);text-align:center;margin-top:4px">Muestra dónde se acumula trabajo</div>
+  </div>`;
+}
+</script>
+<!-- ══════════ FIN MÓDULO INDICADORES ══════════ -->
 </body>
 </html>
