@@ -203,8 +203,8 @@
   .ind-empty { text-align: center; color: var(--gris); font-size: 13px; padding: 14px; }
   .ind-loading { text-align: center; padding: 40px 20px; color: var(--gris); font-size: 14px; }
   .ind-error { text-align: center; color: var(--rojo); font-size: 13px; padding: 20px; }
-  .pin-ind-link { text-align: center; margin-top: 6px; }
-  .pin-ind-link span { font-size: 13px; color: var(--gris); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .pin-ind-btn { margin-top: 6px; background: var(--azul); border-radius: 9px; padding: 10px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 8px rgba(29,91,142,.22); }
+  .pin-ind-btn span { font-size: 13px; font-weight: 700; color: #fff; }
   .admin-section h3 { color: var(--azul); font-size: 15px; margin-bottom: 10px; }
   .list-item {
     display: flex; justify-content: space-between; align-items: center;
@@ -287,11 +287,11 @@
           <button class="pin-btn pin-ok" onclick="checkPin()">OK</button>
         </div>
       </div>
-      <div class="pin-admin-link">
-        <span onclick="pinPress('*')">Acceso Administrador</span>
+      <div class="pin-ind-btn" onclick="goScreen('screen-indicadores-login')">
+        <span>📊 Indicadores</span>
       </div>
-      <div class="pin-ind-link">
-        <span onclick="goScreen('screen-indicadores-login')">📊 Indicadores</span>
+      <div class="pin-admin-link" style="margin-top:6px">
+        <span onclick="pinPress('*')">Acceso Administrador</span>
       </div>
       <div class="pin-error" id="pin-error"></div>
     </div>
@@ -1429,12 +1429,13 @@ function indRenderizar() {
 function indPendientesHtml() {
   if (!indDataPed.length) return '';
 
-  // Mapas: docOrigen → unidades producidas y despachadas (acumulado total, sin filtro de fecha)
-  const mapProd = {}, mapDesp = {};
+  // Mapas: docOrigen → unidades por etapa (acumulado total, sin filtro de fecha)
+  const mapProd = {}, mapEmp = {}, mapDesp = {};
   indDataProd.forEach(o => { const k = (o.c[0]||'').trim(); if (k) mapProd[k] = (mapProd[k]||0) + 1; });
+  indDataEmp.forEach(o  => { const k = (o.c[0]||'').trim(); if (k) mapEmp[k]  = (mapEmp[k] ||0) + 1; });
   indDataDesp.forEach(o => { const k = (o.c[0]||'').trim(); if (k) mapDesp[k] = (mapDesp[k]||0) + 1; });
 
-  let totalPedido = 0, totalPendProd = 0, totalPendDesp = 0;
+  let totalPedido = 0, totalPendProd = 0, totalPendEmp = 0, totalPendDesp = 0;
   const porCanal = {};
   const urgentes = [];
 
@@ -1445,10 +1446,13 @@ function indPendientesHtml() {
     const cant  = o.c[6];
     totalPedido += cant;
     const prod     = mapProd[doc] || 0;
+    const emp      = mapEmp[doc]  || 0;
     const desp     = mapDesp[doc] || 0;
     const pendProd = Math.max(0, cant - prod);
-    const pendDesp = Math.max(0, prod - desp);
+    const pendEmp  = Math.max(0, prod - emp);
+    const pendDesp = Math.max(0, emp  - desp);
     totalPendProd += pendProd;
+    totalPendEmp  += pendEmp;
     totalPendDesp += pendDesp;
     if (pendProd > 0) {
       porCanal[canal] = (porCanal[canal]||0) + pendProd;
@@ -1460,7 +1464,8 @@ function indPendientesHtml() {
   urgentes.sort((a,b) => a.fecha.localeCompare(b.fecha));
   const top5 = urgentes.slice(0, 5);
 
-  const colorPend = totalPendProd === 0 ? 'var(--verde)' : totalPendProd < 20 ? '#f39c12' : 'var(--rojo)';
+  const colorProd = totalPendProd === 0 ? 'var(--verde)' : totalPendProd < 20 ? '#f39c12' : 'var(--rojo)';
+  const colorEmp  = totalPendEmp  === 0 ? 'var(--verde)' : totalPendEmp  < 10 ? '#f39c12' : 'var(--rojo)';
   const colorDesp = totalPendDesp === 0 ? 'var(--verde)' : '#f39c12';
 
   let html = `<div class="ind-seccion">
@@ -1477,10 +1482,16 @@ function indPendientesHtml() {
     </div>
     <div class="ind-stats-row">
       <div class="ind-stat">
-        <div class="ind-stat-num" style="color:${colorPend}">${totalPendProd}</div>
+        <div class="ind-stat-num" style="color:${colorProd}">${totalPendProd}</div>
         <div class="ind-stat-lbl">⚙️ Pend. producir</div>
       </div>
       <div class="ind-stat">
+        <div class="ind-stat-num" style="color:${colorEmp}">${totalPendEmp}</div>
+        <div class="ind-stat-lbl">🧵 Pend. empacar</div>
+      </div>
+    </div>
+    <div class="ind-stats-row">
+      <div class="ind-stat" style="grid-column: span 2">
         <div class="ind-stat-num" style="color:${colorDesp}">${totalPendDesp}</div>
         <div class="ind-stat-lbl">📦 Pend. despachar</div>
       </div>
